@@ -1,0 +1,18 @@
+{
+  "name": "tpgk-max-bot",
+  "version": "1.0.0",
+  "description": "Бот ТПГК для Max Messenger",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsc && node dist/main.js"
+  },
+  "dependencies": {
+    "@maxhub/max-bot-api": "^0.2.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  }
+}
