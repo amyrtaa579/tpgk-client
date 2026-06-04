@@ -1,3 +1,4 @@
+import os from 'os';
 import { Context } from '@maxhub/max-bot-api';
 import { APIClient } from '../services/apiClient';
 import { safeEditMessage, formatCaption, editMessageWithPhoto } from '../utils/helpers';
@@ -247,7 +248,8 @@ export async function handleFaqDoc(
     }
 
     const buffer = Buffer.from(await response.arrayBuffer());
-    const tmpPath = `/tmp/${Date.now()}_${fileName}`;
+    const safeName = fileName.replace(/[()\s]+/g, '_');
+    const tmpPath = path.join(os.tmpdir(), `${Date.now()}_${safeName}`);
     require('fs').writeFileSync(tmpPath, buffer);
 
     const fileAttachment = await ctx.api.uploadFile({ source: tmpPath });

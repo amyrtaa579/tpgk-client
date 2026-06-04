@@ -1,3 +1,4 @@
+import os from 'os';
 import { Context } from '@maxhub/max-bot-api';
 import { APIClient } from '../services/apiClient';
 import { safeEditMessage, editMessageWithFile, editMessageWithPhoto } from '../utils/helpers';
@@ -206,7 +207,8 @@ export async function handleAdmissionFaqDoc(
 
     // Скачиваем файл во временный файл
     const buffer = Buffer.from(await response.arrayBuffer());
-    const tmpPath = `/tmp/${Date.now()}_${docName}`;
+    const safeName = docName.replace(/[()\s]+/g, '_');
+    const tmpPath = path.join(os.tmpdir(), `${Date.now()}_${safeName}`);
     require('fs').writeFileSync(tmpPath, buffer);
 
     // Отправляем файл как новое сообщение
