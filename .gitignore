@@ -38,3 +38,13 @@ Thumbs.db
 # Системные файлы
 .DS_Store
 Thumbs.db
+
+# Приватные данные (ID чатов)
+known_chats.json
+
+# Скомпилированные JS-файлы в корне (не нужны в репозитории)
+/get_users.js
+/test.js
+
+# Папка lib
+lib/
