@@ -1,6 +1,25 @@
 import { Bot } from '@maxhub/max-bot-api';
 import { config } from './config/settings';
 import { APIClient } from './services/apiClient';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const CHATS_FILE = path.join(__dirname, '../known_chats.json');
+const knownChats = new Set<number>();
+try {
+  if (fs.existsSync(CHATS_FILE)) {
+    JSON.parse(fs.readFileSync(CHATS_FILE, 'utf-8')).forEach((id: number) => knownChats.add(id));
+    console.log(`📂 Загружено ${knownChats.size} известных чатов`);
+  }
+} catch (e) {}
+
+function saveChatId(chatId: number) {
+  if (!knownChats.has(chatId)) {
+    knownChats.add(chatId);
+    fs.writeFileSync(CHATS_FILE, JSON.stringify([...knownChats], null, 2));
+    console.log(`💾 Новый чат: ${chatId} (всего: ${knownChats.size})`);
+  }
+}
 
 // Handlers
 import { handleStart, handleHome, handleHelp } from './handlers/start';
@@ -212,7 +231,7 @@ bot.action('admission:dates', async (ctx) => {
 
 bot.action('admission:faq', async (ctx) => {
   try {
-    await handleAdmissionFaq(ctx, apiClient);
+    await handleAdmissionFaq(ctx, apiClient, 1); // Добавлен параметр page = 1
   } catch (err) {
     console.error('Ошибка в handleAdmissionFaq:', err);
   }
@@ -249,7 +268,7 @@ bot.action(/^admission:faq_doc:(\d+):(\d+)$/, async (ctx) => {
 bot.action(/^faq:category:(.*)$/, async (ctx) => {
   try {
     const category = ctx.match![1] || 'all';
-    await handleFaqCategory(ctx, apiClient, category);
+    await handleFaqCategory(ctx, apiClient, category, 1); // Добавлен параметр page = 1
   } catch (err) {
     console.error('Ошибка в handleFaqCategory:', err);
   }
@@ -257,15 +276,18 @@ bot.action(/^faq:category:(.*)$/, async (ctx) => {
 
 bot.action('faq:categories', async (ctx) => {
   try {
+    console.log('🔙 DEBUG: Нажата кнопка "К категориям"');
+    await ctx.answerOnCallback({ notification: '' });
     await handleFaqMenu(ctx, apiClient);
+    console.log('✅ DEBUG: handleFaqMenu успешно выполнен');
   } catch (err) {
-    console.error('Ошибка в handleFaqMenu:', err);
+    console.error('❌ Ошибка в handleFaqMenu (categories):', err);
   }
 });
 
 bot.action('faq:list', async (ctx) => {
   try {
-    await handleFaqList(ctx, apiClient);
+    await handleFaqList(ctx, apiClient, 1); // Добавлен параметр page = 1
   } catch (err) {
     console.error('Ошибка в handleFaqList:', err);
   }
@@ -289,6 +311,36 @@ bot.action(/^faq:doc:(\d+):(\d+)$/, async (ctx) => {
     await handleFaqDoc(ctx, apiClient, faqId, docIndex);
   } catch (err) {
     console.error('Ошибка в handleFaqDoc:', err);
+  }
+});
+
+// FAQ — пагинация
+bot.action(/^faq:page:(\d+):(.*)$/, async (ctx) => {
+  try {
+    const page = parseInt(ctx.match![1], 10);
+    const category = ctx.match![2] || 'all';
+    await handleFaqCategory(ctx, apiClient, category, page);
+  } catch (err) {
+    console.error('Ошибка в handleFaqCategory (pagination):', err);
+  }
+});
+
+// Приёмная кампания — пагинация FAQ
+bot.action(/^admission:faq:page:(\d+)$/, async (ctx) => {
+  try {
+    const page = parseInt(ctx.match![1], 10);
+    await handleAdmissionFaq(ctx, apiClient, page);
+  } catch (err) {
+    console.error('Ошибка в handleAdmissionFaq (pagination):', err);
+  }
+});
+
+// Обработчик для кнопки-заглушки (отображение текущей страницы)
+bot.action('noop', async (ctx) => {
+  try {
+    await ctx.answerOnCallback({ notification: '' });
+  } catch (err) {
+    // Игнорируем
   }
 });
 
@@ -449,6 +501,20 @@ bot.on('message_created', async (ctx) => {
   } catch (err) {
     console.error('Ошибка в message_created:', err);
   }
+});
+
+// Сохраняем chat_id при каждом взаимодействии
+bot.on('message_created', async (ctx, next) => {
+  try { if (ctx.chatId) saveChatId(ctx.chatId); } catch {}
+  return next ? next() : undefined;
+});
+bot.on('message_callback', async (ctx, next) => {
+  try { if (ctx.chatId) saveChatId(ctx.chatId); } catch {}
+  return next ? next() : undefined;
+});
+bot.on('bot_started', async (ctx, next) => {
+  try { if (ctx.chatId) saveChatId(ctx.chatId); } catch {}
+  return next ? next() : undefined;
 });
 
 console.log('✅ Бот инициализирован, запускаю...');

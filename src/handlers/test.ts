@@ -1,6 +1,6 @@
 import { Context } from '@maxhub/max-bot-api';
 import { APIClient } from '../services/apiClient';
-import { safeEditMessage, progressBar } from '../utils/helpers';
+import { safeEditMessage, progressBar, editMessageWithPhoto } from '../utils/helpers';
 import { answerCallback, getUserId } from '../utils/contextHelpers';
 import {
   testStartKeyboard,
@@ -120,14 +120,7 @@ async function showQuestion(
   // Если есть изображение — загружаем и отправляем с ним
   if (question.image_url) {
     try {
-      const imageAttachment = await ctx.api.uploadImage({ url: question.image_url });
-      const attachments: any[] = [imageAttachment.toJson(), keyboard];
-
-      await ctx.editMessage({
-        text,
-        attachments,
-        format: 'html',
-      } as any);
+      await editMessageWithPhoto(ctx, question.image_url, text, keyboard);
     } catch (err) {
       console.warn('[TEST] Не удалось загрузить изображение, отправляю текст:', err);
       await safeEditMessage(ctx, text, keyboard);
@@ -192,14 +185,7 @@ export async function handleTestAnswer(
     // Сначала отвечаем на callback с новым сообщением
     try {
       if (question.image_url) {
-        const imageAttachment = await ctx.api.uploadImage({ url: question.image_url });
-        await answerCallback(ctx, {
-          message: {
-            text,
-            attachments: [imageAttachment.toJson(), keyboard],
-            format: 'html',
-          } as any,
-        });
+        await editMessageWithPhoto(ctx, question.image_url, text, keyboard);
       } else {
         await answerCallback(ctx, {
           message: {

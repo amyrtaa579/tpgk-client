@@ -122,6 +122,8 @@ export function admissionBackKeyboard(): InlineKeyboardAttachmentRequest {
 
 export function admissionFaqListKeyboard(
   faqIds: number[],
+  page: number,
+  totalPages: number,
 ): InlineKeyboardAttachmentRequest {
   const builder: any[][] = [];
   const rowSize = 3;
@@ -134,6 +136,21 @@ export function admissionFaqListKeyboard(
       row.push(button.callback(emoji, `admission:faq_detail:${faqIds[idx]}`));
     }
     builder.push(row);
+  }
+
+  // Пагинация
+  if (totalPages > 1) {
+    const navRow: any[] = [];
+    if (page > 1) {
+      navRow.push(button.callback('⏮', `admission:faq:page:1`));
+      navRow.push(button.callback('◀️', `admission:faq:page:${page - 1}`));
+    }
+    navRow.push(button.callback(`${page}/${totalPages}`, 'noop'));
+    if (page < totalPages) {
+      navRow.push(button.callback('▶️', `admission:faq:page:${page + 1}`));
+      navRow.push(button.callback('⏭', `admission:faq:page:${totalPages}`));
+    }
+    builder.push(navRow);
   }
 
   builder.push([button.callback('⬅️ Назад', 'menu:admission')]);
@@ -179,6 +196,8 @@ export function faqCategoriesKeyboard(
 export function faqListKeyboard(
   faqs: { id: number; question: string }[],
   category: string | null = null,
+  page: number = 1,
+  totalPages: number = 1,
 ): InlineKeyboardAttachmentRequest {
   const builder: any[][] = [];
   const rowSize = 3;
@@ -194,6 +213,21 @@ export function faqListKeyboard(
       row.push(button.callback(emoji, callback));
     }
     builder.push(row);
+  }
+
+  // Пагинация
+  if (totalPages > 1) {
+    const navRow: any[] = [];
+    if (page > 1) {
+      navRow.push(button.callback('⏮', `faq:page:1:${category || 'all'}`));
+      navRow.push(button.callback('◀️', `faq:page:${page - 1}:${category || 'all'}`));
+    }
+    navRow.push(button.callback(`${page}/${totalPages}`, 'noop'));
+    if (page < totalPages) {
+      navRow.push(button.callback('▶️', `faq:page:${page + 1}:${category || 'all'}`));
+      navRow.push(button.callback('⏭', `faq:page:${totalPages}:${category || 'all'}`));
+    }
+    builder.push(navRow);
   }
 
   // Кнопка назад ведёт к списку категорий

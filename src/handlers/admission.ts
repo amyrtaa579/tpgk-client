@@ -87,7 +87,11 @@ export async function handleAdmissionDates(ctx: Context, apiClient: APIClient): 
   }
 }
 
-export async function handleAdmissionFaq(ctx: Context, apiClient: APIClient): Promise<void> {
+export async function handleAdmissionFaq(
+  ctx: Context,
+  apiClient: APIClient,
+  page: number = 1,
+): Promise<void> {
   try {
     const faqs = await apiClient.getFaq();
     const documents = await apiClient.getDocumentsList();
@@ -100,16 +104,24 @@ export async function handleAdmissionFaq(ctx: Context, apiClient: APIClient): Pr
       return;
     }
 
+    const itemsPerPage = 9;
+    const totalPages = Math.ceil(admissionFaqs.length / itemsPerPage);
+    const currentPage = Math.max(1, Math.min(page, totalPages));
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedFaqs = admissionFaqs.slice(startIndex, endIndex);
+
     const textParts = ['<b>Вопросы для поступающих</b>', ''];
     const faqIds: number[] = [];
-    for (let i = 0; i < admissionFaqs.length; i++) {
-      textParts.push(`${i + 1}. <b>${admissionFaqs[i].question}</b>`, '');
-      faqIds.push(admissionFaqs[i].id);
+    for (let i = 0; i < paginatedFaqs.length; i++) {
+      const globalIndex = startIndex + i + 1;
+      textParts.push(`${globalIndex}. <b>${paginatedFaqs[i].question}</b>`, '');
+      faqIds.push(paginatedFaqs[i].id);
     }
     textParts.push('Выберите номер:');
     const text = textParts.join('\n').trimEnd();
 
-    const keyboard = admissionFaqListKeyboard(faqIds);
+    const keyboard = admissionFaqListKeyboard(faqIds, currentPage, totalPages);
     await safeEditMessage(ctx, text, keyboard);
   } catch (err: any) {
     await answerCallback(ctx, { notification: `Ошибка: ${err.message}` });
